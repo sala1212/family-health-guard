@@ -1,0 +1,2152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="theme-color" content="#3498db">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>家庭健康守护站 - 关爱版</title>
+    <!-- 引入 LeanCloud 云 SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/leancloud-storage@4.15.0/dist/av-min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 原有样式完全保留 */
+        :root {
+            --primary: #3498db;
+            --secondary: #2ecc71;
+            --accent: #e74c3c;
+            --light: #ffffff;
+            --dark: #2c3e50;
+            --gray: #95a5a6;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2c3e50, #1a2a6c);
+            color: var(--light);
+            min-height: 100vh;
+            padding: 20px;
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            font-size: 18px;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            background: rgba(44, 62, 80, 0.9);
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+        }
+
+        header h1 {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        header h1 i {
+            color: var(--secondary);
+            font-size: 2.8rem;
+        }
+
+        header p {
+            font-size: 1.3rem;
+            color: var(--light);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* 新增：云端同步状态样式 */
+        .sync-status {
+            margin-top: 10px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.1rem;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .sync-status.syncing {
+            color: #f39c12;
+        }
+        .sync-status.synced {
+            color: var(--secondary);
+        }
+        .sync-status.failed {
+            color: var(--accent);
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(44, 62, 80, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(5px);
+            transition: var(--transition);
+            font-size: 1.1rem;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h2 {
+            color: var(--secondary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.8rem;
+        }
+
+        .card h2 i {
+            font-size: 1.8rem;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 1.1rem;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-value {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .status-active {
+            color: var(--secondary);
+        }
+
+        .status-inactive {
+            color: var(--accent);
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+        }
+
+        .btn-secondary:hover {
+            background: #27ae60;
+        }
+
+        .btn-accent {
+            background: var(--accent);
+        }
+
+        .btn-accent:hover {
+            background: #c0392b;
+        }
+
+        .btn-sm {
+            padding: 10px 18px;
+            font-size: 1.1rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .schedule-container {
+            margin-top: 30px;
+        }
+
+        .schedule-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .schedule-card {
+            background: rgba(44, 62, 80, 0.9);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            font-size: 1.1rem;
+        }
+
+        .schedule-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .schedule-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 8px;
+            height: 100%;
+            background: var(--primary);
+        }
+
+        .schedule-card.active {
+            background: rgba(52, 152, 219, 0.2);
+            border: 1px solid var(--primary);
+        }
+
+        .schedule-card.active::before {
+            background: var(--secondary);
+            width: 10px;
+        }
+
+        .schedule-time {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .schedule-desc {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .meds-list {
+            list-style: none;
+            margin: 15px 0;
+            padding-left: 15px;
+            font-size: 1.1rem;
+        }
+
+        .meds-list li {
+            padding: 10px 0;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .meds-list li:last-child {
+            border-bottom: none;
+        }
+
+        .meds-list li::before {
+            content: '💊';
+            font-size: 1.3rem;
+        }
+
+        .extra-info {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .encourage {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(46, 204, 113, 0.2);
+            border-radius: 10px;
+            text-align: center;
+            font-style: italic;
+            font-weight: 500;
+            font-size: 1.2rem;
+        }
+
+        .chart-container {
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            margin-top: 40px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.1rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: rgba(44, 62, 80, 0.95);
+            width: 90%;
+            max-width: 600px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            animation: modalIn 0.4s ease-out;
+            font-size: 1.1rem;
+        }
+
+        @keyframes modalIn {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            background: var(--primary);
+            padding: 20px;
+            text-align: center;
+        }
+
+        .modal-header h2 {
+            color: white;
+            font-size: 2rem;
+        }
+
+        .modal-body {
+            padding: 30px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress {
+            height: 100%;
+            background: var(--secondary);
+            width: 100%;
+            transition: width 1s linear;
+        }
+        
+        .bp-form {
+            margin-top: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .bp-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .bp-label {
+            width: 140px;
+            font-weight: 500;
+            font-size: 1.1rem;
+        }
+        
+        .bp-input {
+            width: 90px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #3498db;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        
+        .bp-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .bp-input-group span {
+            line-height: 36px;
+            font-size: 1.2rem;
+        }
+        
+        .bp-result {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(46, 204, 113, 0.1);
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+            font-size: 1.2rem;
+        }
+        
+        .bp-history {
+            margin-top: 15px;
+            max-height: 150px;
+            overflow-y: auto;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        
+        .bp-history-item {
+            padding: 10px 0;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+            font-size: 1.1rem;
+        }
+        
+        .bp-history-item:last-child {
+            border-bottom: none;
+        }
+        .health-tips {
+            background: rgba(231, 76, 60, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 40px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(5px);
+        }
+        
+        .health-tips h2 {
+            color: var(--secondary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.8rem;
+        }
+        
+        .health-tips h2 i {
+            font-size: 1.8rem;
+        }
+        
+        .tip-category {
+            margin-bottom: 25px;
+        }
+        
+        .tip-category h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.4rem;
+        }
+        
+        .tip-items {
+            padding-left: 30px;
+        }
+        
+        .tip-items li {
+            margin-bottom: 12px;
+            line-height: 1.7;
+            font-size: 1.2rem;
+        }
+        
+        .tip-items li strong {
+            color: #f1c40f;
+            font-size: 1.2rem;
+        }
+        
+        .add-reminder-form {
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 500;
+            font-size: 1.1rem;
+        }
+        
+        .form-group input, 
+        .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+            border: 1px solid #3498db;
+            font-size: 1.1rem;
+        }
+        
+        .form-group textarea {
+            min-height: 120px;
+        }
+        
+        .bp-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .bp-table th, 
+        .bp-table td {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .bp-table th {
+            background: rgba(52, 152, 219, 0.2);
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+        
+        .bp-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        /* 新增：血压记录编辑按钮样式 */
+        .edit-bp-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .edit-bp-btn:hover {
+            background: #2980b9;
+        }
+        
+        .audio-unlock {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 2000;
+            background: rgba(231, 76, 60, 0.9);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+        }
+        
+        .audio-unlock.unlocked {
+            background: rgba(46, 204, 113, 0.9);
+        }
+
+        .reminder-log {
+            background: rgba(44, 62, 80, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: var(--shadow);
+        }
+        
+        .reminder-log h2 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.8rem;
+        }
+        
+        .log-container {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .log-item {
+            padding: 10px 0;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+            font-size: 1.1rem;
+        }
+        
+        .log-item:last-child {
+            border-bottom: none;
+        }
+        
+        .health-targets {
+            background: rgba(52, 152, 219, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(5px);
+        }
+        
+        .health-targets h2 {
+            color: var(--secondary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.8rem;
+        }
+        
+        .target-item {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .target-item i {
+            font-size: 2rem;
+            color: var(--accent);
+        }
+        
+        .target-content h3 {
+            color: white;
+            margin-bottom: 5px;
+            font-size: 1.3rem;
+        }
+        
+        .target-content p {
+            font-size: 1.2rem;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .schedule-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .bp-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .bp-label {
+                margin-bottom: 10px;
+                width: 100%;
+            }
+            
+            .bp-input-group {
+                width: 100%;
+            }
+            
+            .bp-table {
+                font-size: 1rem;
+            }
+            
+            .audio-unlock {
+                top: 5px;
+                right: 5px;
+                padding: 12px 15px;
+                font-size: 1.1rem;
+            }
+            
+            .schedule-time {
+                font-size: 2rem;
+            }
+            
+            .schedule-desc {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 新增音频解锁按钮 -->
+    <div class="audio-unlock" id="audioUnlockBtn">
+        <i class="fas fa-lock"></i> 请点击我，等几秒解锁音频
+    </div>
+    
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-heartbeat"></i> 家庭健康守护站</h1>
+            <p>智能提醒服药、健康活动与复查日期，守护全家健康</p>
+            <!-- 新增：云端同步状态显示 -->
+            <div class="sync-status" id="syncStatus">
+                <i class="fas fa-sync-alt"></i>
+                <span id="syncStatusText">未同步</span>
+            </div>
+        </header>
+        
+        <div class="dashboard">
+            <div class="card">
+                <h2><i class="fas fa-bell"></i> 提醒状态</h2>
+                <div class="status-item">
+                    <span class="status-label"><i class="fas fa-clock"></i> 下次提醒</span>
+                    <span class="status-value" id="nextAlert">07:45</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label"><i class="fas fa-volume-up"></i> 音频状态</span>
+                    <span class="status-value status-inactive" id="audioStatus">未解锁</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label"><i class="fas fa-sync"></i> 后台服务</span>
+                    <span class="status-value status-active" id="serviceStatusText">运行中</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label"><i class="fas fa-calendar-check"></i> 复查日期</span>
+                    <span class="status-value" id="reviewDateDisplay">2025年8月15日 09:00</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label"><i class="fas fa-heartbeat"></i> 血压记录</span>
+                    <span class="status-value">
+                        <button class="btn btn-sm" onclick="viewBloodPressureRecords()">
+                            查看记录
+                        </button>
+                    </span>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="testAudio()">
+                        <i class="fas fa-music"></i> 测试音频
+                    </button>
+                    <button class="btn" onclick="openDateEditModal()">
+                        <i class="fas fa-calendar-alt"></i> 设置复查
+                    </button>
+                    <button class="btn btn-accent" onclick="openEditModal()">
+                        <i class="fas fa-edit"></i> 编辑日程
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2><i class="fas fa-cog"></i> 系统设置</h2>
+                <div class="setting-item">
+                    <label><i class="fas fa-volume-up"></i> 提示音量</label>
+                    <input type="range" id="volume" min="0" max="1" step="0.1" value="0.7">
+                    <span id="volumeValue">70%</span>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="saveSettings()">
+                        <i class="fas fa-save"></i> 保存设置
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="schedule-container">
+            <div class="schedule-header">
+                <h2 style="font-size: 1.8rem; color: white;"><i class="fas fa-list-alt"></i> 今日健康计划</h2>
+                <div style="color: #ecf0f1; font-size: 1.1rem;">
+                    <span id="currentDate">今天是：2025年7月27日 星期日</span>
+                </div>
+            </div>
+            
+            <div class="schedule-grid" id="scheduleContainer">
+                <!-- 日程卡片将通过JS动态生成 -->
+            </div>
+        </div>
+        
+        <!-- 提醒日志 -->
+        <div class="reminder-log">
+            <h2><i class="fas fa-history"></i> 提醒日志</h2>
+            <div class="log-container" id="reminderLog">
+                <div class="log-item">系统已启动，等待提醒...</div>
+            </div>
+        </div>
+        
+        <!-- 健康指标提示 -->
+        <div class="health-targets">
+            <h2><i class="fas fa-heart"></i> 健康指标目标</h2>
+            
+            <div class="target-item">
+                <i class="fas fa-heartbeat"></i>
+                <div class="target-content">
+                    <h3>血压控制</h3>
+                    <p>应控制小于 <strong>130/80 mmHg</strong></p>
+                </div>
+            </div>
+            
+            <div class="target-item">
+                <i class="fas fa-running"></i>
+                <div class="target-content">
+                    <h3>心率控制</h3>
+                    <p>静息状态下 <strong>55-60次/分</strong></p>
+                </div>
+            </div>
+            
+            <div class="target-item">
+                <i class="fas fa-vial"></i>
+                <div class="target-content">
+                    <h3>血脂控制</h3>
+                    <p>低密度脂蛋白胆固醇（LDLC）<strong>小于1.8mmol/L</strong>，降低幅度大于50%</p>
+                </div>
+            </div>
+            
+            <div class="target-item">
+                <i class="fas fa-tint"></i>
+                <div class="target-content">
+                    <h3>血糖控制</h3>
+                    <p>糖化血红蛋白 <strong>小于7%</strong></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 健康小提示 -->
+        <div class="health-tips">
+            <h2><i class="fas fa-lightbulb"></i> 健康小提示</h2>
+            
+            <div class="tip-category">
+                <h3><i class="fas fa-exclamation-triangle"></i> 危险处理</h3>
+                <ul class="tip-items">
+                    <li><strong>胸痛处理：</strong>立即休息 → 舌下含服硝酸甘油 → 拨打120或999！</li>
+                </ul>
+            </div>
+            
+            <div class="tip-category">
+                <h3><i class="fas fa-heart"></i> 生活习惯</h3>
+                <ul class="tip-items">
+                    <li><strong>戒烟：</strong>完全戒烟</li>
+                    <li><strong>饮酒：</strong>尽量戒酒，每日≤半两酒</li>
+                    <li><strong>定期复查：</strong>遵医嘱定期复查</li>
+                </ul>
+            </div>
+            
+            <div class="tip-category">
+                <h3><i class="fas fa-utensils"></i> 适合食物</h3>
+                <ul class="tip-items">
+                    <li><strong>白肉：</strong>去皮鸡胸、鲈鱼、鲫鱼、虾</li>
+                    <li><strong>红肉：</strong>牛腱子、猪瘦里脊肉（一周1-2次，一次≤2两）</li>
+                    <li><strong>粗粮：</strong>燕麦、糙米、藜麦、黑豆、玉米</li>
+                    <li><strong>蔬菜：</strong>菠菜、苋菜、木耳、冬瓜、茄子、西红柿、海带、香菇、紫菜、芹菜、洋葱、白菜、黄瓜、韭菜、胡萝卜、西蓝花、羽衣甘蓝</li>
+                    <li><strong>坚果：</strong>奇亚籽、亚麻籽（每日≤15g）</li>
+                    <li><strong>饮料：</strong>脱脂牛奶、无糖豆浆</li>
+                    <li><strong>食用油：</strong>橄榄油、菜籽油</li>
+                    <li><strong>烹饪方式：</strong>蒸、煮、炖</li>
+                </ul>
+            </div>
+        </div>
+        
+        <footer>
+            <p>家庭健康守护站 v2.1 | 用心守护全家健康每一天</p>
+            <p style="margin-top: 10px;">© 2025 健康科技 | 数据同步至云端</p>
+        </footer>
+    </div>
+    
+    <!-- 提醒模态框 -->
+    <div class="modal" id="reminderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-bell"></i> 健康提醒</h2>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="font-size: 3rem; color: #e74c3c; margin-bottom: 15px;">
+                        <i class="fas fa-clock"></i> <span id="reminderTime">07:45</span>
+                    </div>
+                    <div id="reminderText" style="font-size: 1.4rem; line-height: 1.6; margin-bottom: 20px;">
+                        饭后服药：康忻（富马酸比索洛尔）半片、安达唐 1片、科素亚 1片等
+                    </div>
+                    
+                    <div class="progress-bar">
+                        <div class="progress" id="timerProgress"></div>
+                    </div>
+                    <p style="margin-top: 10px; color: #95a5a6;">提醒将在 <span id="countdown">60</span> 秒后自动关闭</p>
+                    
+                    <div style="background: rgba(231, 76, 60, 0.1); padding: 15px; border-radius: 10px; margin: 25px 0;">
+                        <h3 style="color: #e74c3c; margin-bottom: 15px;"><i class="fas fa-pills"></i> 需服药物</h3>
+                        <ul id="medsModalList" style="list-style: none; padding: 0;">
+                            <li>康忻（富马酸比索洛尔）半片</li>
+                            <li>安达唐 1片</li>
+                            <li>科素亚 1片</li>
+                            <li>氯化钾缓释片 2片（吃完停）</li>
+                            <li>倍林达 1片</li>
+                        </ul>
+                    </div>
+                    
+                    <div id="audioStatus" style="background: rgba(52, 152, 219, 0.1); padding: 12px; border-radius: 8px; margin-top: 20px;">
+                        <i class="fas fa-volume-up"></i> 正在播放铃声和语音
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-accent" onclick="skipReminderToday()">
+                    <i class="fas fa-ban"></i> 今日跳过
+                </button>
+                <button class="btn" onclick="snoozeReminder()">
+                    <i class="fas fa-clock"></i> 稍后提醒
+                </button>
+                <button class="btn btn-secondary" onclick="closeReminder()">
+                    <i class="fas fa-check"></i> 已完成
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 编辑模态框 -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> 编辑日程</h2>
+            </div>
+            <div class="modal-body">
+                <div id="editSchedulesContainer">
+                    <!-- 编辑项将通过JS动态生成 -->
+                </div>
+                
+                <div style="display: flex; gap: 15px; margin-top: 25px;">
+                    <button class="btn btn-secondary" onclick="openAddReminderModal()">
+                        <i class="fas fa-plus"></i> 新增提醒
+                    </button>
+                    <button class="btn" onclick="restoreDefaultSchedules()">
+                        <i class="fas fa-undo"></i> 恢复默认
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-accent" onclick="closeEditModal()">
+                    <i class="fas fa-times"></i> 取消
+                </button>
+                <button class="btn btn-secondary" onclick="saveScheduleTimes()">
+                    <i class="fas fa-save"></i> 保存更改
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 复查日期编辑模态框 -->
+    <div class="modal" id="dateEditModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-calendar-alt"></i> 设置复查日期</h2>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">复查日期</label>
+                    <input type="date" id="reviewDateInput" style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.2); color: white; border: 1px solid #3498db;">
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">提醒时间</label>
+                    <input type="time" id="reviewTimeInput" value="09:00" style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.2); color: white; border: 1px solid #3498db;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-accent" onclick="closeDateEditModal()">
+                    <i class="fas fa-times"></i> 取消
+                </button>
+                <button class="btn btn-secondary" onclick="saveReviewDate()">
+                    <i class="fas fa-save"></i> 保存
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 新增提醒模态框 -->
+    <div class="modal" id="addReminderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-plus-circle"></i> 新增提醒</h2>
+            </div>
+            <div class="modal-body">
+                <div class="add-reminder-form">
+                    <div class="form-group">
+                        <label for="newReminderTime"><i class="fas fa-clock"></i> 提醒时间</label>
+                        <input type="time" id="newReminderTime" value="12:00">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="newReminderDesc"><i class="fas fa-tasks"></i> 提醒内容</label>
+                        <input type="text" id="newReminderDesc" placeholder="输入提醒内容...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="newReminderMeds"><i class="fas fa-pills"></i> 需服药物（每行一种）</label>
+                        <textarea id="newReminderMeds" placeholder="输入药物名称和剂量..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="newReminderExtra"><i class="fas fa-info-circle"></i> 额外信息</label>
+                        <textarea id="newReminderExtra" placeholder="输入额外说明信息..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-accent" onclick="closeAddReminderModal()">
+                    <i class="fas fa-times"></i> 取消
+                </button>
+                <button class="btn" onclick="confirmAddReminder()">
+                    <i class="fas fa-check"></i> 确定
+                </button>
+                <button class="btn btn-secondary" onclick="saveNewReminder()">
+                    <i class="fas fa-save"></i> 保存
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 血压记录模态框 -->
+    <div class="modal" id="bpRecordsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-heartbeat"></i> 血压记录</h2>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h3>近三个月血压记录</h3>
+                    <div id="bpRecordsContent">
+                        <!-- 血压记录将通过JS动态生成 -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeBPRecordsModal()">
+                    <i class="fas fa-times"></i> 关闭
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 血压编辑模态框（新增） -->
+    <div class="modal" id="editBPModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> 编辑血压记录</h2>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editRecordIndex">
+                <input type="hidden" id="editRecordPeriod">
+                <input type="hidden" id="editRecordDate">
+                
+                <div class="bp-form">
+                    <div class="bp-row">
+                        <div class="bp-label">日期：</div>
+                        <div id="editRecordDateDisplay" style="font-size: 1.1rem;"></div>
+                    </div>
+                    
+                    <div class="bp-row">
+                        <div class="bp-label">时段：</div>
+                        <div id="editRecordPeriodDisplay" style="font-size: 1.1rem;"></div>
+                    </div>
+                    
+                    <div class="bp-row">
+                        <div class="bp-label">平均收缩压：</div>
+                        <div class="bp-input-group">
+                            <input type="number" class="bp-input" id="editSystolic" placeholder="收缩压">
+                            <span>mmHg</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bp-row">
+                        <div class="bp-label">平均舒张压：</div>
+                        <div class="bp-input-group">
+                            <input type="number" class="bp-input" id="editDiastolic" placeholder="舒张压">
+                            <span>mmHg</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-accent" onclick="closeEditBPModal()">
+                    <i class="fas fa-times"></i> 取消
+                </button>
+                <button class="btn btn-secondary" onclick="saveEditedBPRecord()">
+                    <i class="fas fa-save"></i> 保存修改
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 通知条 -->
+    <div id="notification" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(44, 62, 80, 0.95); color: white; padding: 15px 25px; border-radius: 50px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 1000; backdrop-filter: blur(10px);">
+        <i class="fas fa-info-circle" style="margin-right: 10px;"></i>
+        <span id="notificationText">通知消息示例</span>
+    </div>
+<script>
+    // LeanCloud 配置
+    const APP_ID = 'MeemM09nMYmNleJOkfvmDwBE-gzGzoHsz';
+    const APP_KEY = '3zgbazmY4NIPctSlYDD7rjZW';
+    AV.init({
+        appId: APP_ID,
+        appKey: APP_KEY,
+        serverURLs: 'https://meemm09n.lc-cn-n1-shared.com' // 国内用户请使用 https://api.leancloud.cn
+    });
+
+    // 默认日程配置
+    const DEFAULT_SCHEDULES = [
+        {time:"06:30",desc:"早上测血压",meds:[],extra:"背靠椅、双脚平放、臂带与心脏同高；测3次（间隔1分钟），记录平均值。"},
+        {time:"06:45",desc:"空腹服药",meds:["壹丽安片（艾普拉唑肠溶）1片","拜阿司匹林 1片"],extra:""},
+        {time:"07:45",desc:"饭后服药",meds:["康忻（富马酸比索洛尔）半片","安达唐 1片","科素亚 1片","氯化钾缓释片 2片（吃完停）","倍林达 1片"],extra:""},
+        {time:"10:30",desc:"上午运动",meds:[],extra:"打太极拳15-20分钟；每周≥5天，每次半小时"},
+        {time:"11:30",desc:"午餐时间",meds:[],extra:"少油、少盐（≤5克）、少糖、高纤维"},
+        {time:"12:00",desc:"服药",meds:["氯化钾缓释片 2片（吃完停）"],extra:""},
+        {time:"16:00",desc:"下午运动",meds:[],extra:"散步15-20分钟"},
+        {time:"18:00",desc:"晚餐时间",meds:[],extra:"少油、少盐（≤5克）、少糖、高纤维"},
+        {time:"22:00",desc:"睡前测血压",meds:[],extra:"记录3次平均值"},
+        {time:"22:10",desc:"睡前服药",meds:["氯化钾缓释片 2片（吃完停）","可定 1片","倍林达 1片"],extra:""},
+        {time:"22:30",desc:"入睡时间",meds:[],extra:"按时休息，晚安🌙"}
+    ];
+
+    const encouragement = [
+        "今天的你，又认真守护健康啦～真棒！",
+        "好好照顾自己，就是给家人最好的礼物 ❤️",
+        "每一次坚持，都在积累更健康的明天 ✨",
+        "按时健康管理的你，超有魅力der～",
+        "慢慢来，健康是一场温柔的长期战 🌱"
+    ];
+
+    // 全局变量
+    let schedules = JSON.parse(JSON.stringify(DEFAULT_SCHEDULES));
+    let reviewDate = "2025-08-15T00:00:00.000Z";
+    let reviewTime = "09:00";
+    let audioEnabled = true;
+    let bloodPressureRecords = [];
+    let audioContext = null;
+    let audioUnlocked = false;
+    let reminderLog = [];
+    let lastTriggeredTimes = {};
+    let currentVolume = 0.7;
+
+    /* ---------- 云端同步状态更新函数（新增） ---------- */
+    function updateSyncStatus(status, message = '') {
+        const statusElement = document.getElementById('syncStatus');
+        const textElement = document.getElementById('syncStatusText');
+        
+        // 移除所有状态类
+        statusElement.classList.remove('syncing', 'synced', 'failed');
+        
+        // 设置新状态
+        switch(status) {
+            case 'syncing':
+                statusElement.classList.add('syncing');
+                textElement.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> 同步中...${message}`;
+                break;
+            case 'synced':
+                statusElement.classList.add('synced');
+                textElement.innerHTML = `<i class="fas fa-check"></i> 已同步${message ? '：' + message : ''}`;
+                break;
+            case 'failed':
+                statusElement.classList.add('failed');
+                textElement.innerHTML = `<i class="fas fa-exclamation-circle"></i> 同步失败${message ? '：' + message : ''}`;
+                break;
+            default:
+                textElement.textContent = '未同步';
+        }
+    }
+
+    /* ---------- 云同步功能（修改） ---------- */
+    async function saveToCloud() {
+        try {
+            // 更新同步状态为"同步中"
+            updateSyncStatus('syncing', '正在保存数据...');
+            
+            const HealthData = AV.Object.extend('HealthData');
+            const query = new AV.Query('HealthData');
+            const data = {
+                schedules: schedules,
+                reviewDate: reviewDate,
+                reviewTime: reviewTime,
+                bloodPressureRecords: bloodPressureRecords
+            };
+            
+            let healthData = await query.first();
+            if (!healthData) {
+                healthData = new HealthData();
+            }
+            
+            healthData.set('data', data);
+            await healthData.save();
+            
+            // 更新同步状态为"已同步"
+            updateSyncStatus('synced', '数据已保存');
+            console.log('数据已同步到云端');
+        } catch (error) {
+            // 更新同步状态为"失败"
+            updateSyncStatus('failed', error.message);
+            console.error('云同步失败:', error);
+        }
+    }
+
+    async function loadFromCloud() {
+        try {
+            // 更新同步状态为"同步中"
+            updateSyncStatus('syncing', '正在加载数据...');
+            
+            const query = new AV.Query('HealthData');
+            const healthData = await query.first();
+            
+            if (healthData) {
+                const data = healthData.get('data');
+                schedules = data.schedules || JSON.parse(JSON.stringify(DEFAULT_SCHEDULES));
+                reviewDate = data.reviewDate || "2025-08-15T00:00:00.000Z";
+                reviewTime = data.reviewTime || "09:00";
+                bloodPressureRecords = data.bloodPressureRecords || [];
+                
+                renderSchedules();
+                updateCurrentDate();
+                updateSyncStatus('synced', '数据已加载');
+                console.log('数据已从云端同步');
+            } else {
+                // 云端无数据时使用本地数据
+                loadBloodPressureRecords();
+                renderSchedules();
+                updateCurrentDate();
+                updateSyncStatus('synced', '使用本地数据');
+            }
+        } catch (error) {
+            // 更新同步状态为"失败"
+            updateSyncStatus('failed', error.message);
+            console.error('从云端加载失败:', error);
+            // 失败时仍使用本地数据
+            loadBloodPressureRecords();
+            renderSchedules();
+            updateCurrentDate();
+        }
+    }
+
+    /* ---------- 初始化函数 ---------- */
+    async function initApp() {
+        // 初始化 LeanCloud
+        if (APP_ID === 'MeemM09nMYmNleJOkfvmDwBE-gzGzoHsz ' || APP_KEY === '3zgbazmY4NIPctSlYDD7rjZW') {
+            alert('请先配置 LeanCloud 应用信息！\n请打开代码找到 APP_ID 和 APP_KEY 并替换为你自己的。');
+        }
+        
+        // 从云端加载数据
+        await loadFromCloud();
+        
+        // 预加载语音合成API
+        if ('speechSynthesis' in window) {
+            speechSynthesis.getVoices();
+        }
+        
+        // 启动定时提醒
+        startReminderScheduler();
+        
+        // 添加音频解锁按钮事件
+        document.getElementById('audioUnlockBtn').addEventListener('click', unlockAudio);
+        
+        // 设置音量控件
+        const volumeSlider = document.getElementById('volume');
+        const volumeValue = document.getElementById('volumeValue');
+        volumeSlider.addEventListener('input', function() {
+            currentVolume = parseFloat(this.value);
+            volumeValue.textContent = Math.round(currentVolume * 100) + '%';
+        });
+        
+        // 模拟启动提醒
+        setTimeout(() => {
+            showNotification("您好！我是您的健康助手，我会按时提醒您服药和健康活动。");
+            addLog("系统启动成功");
+        }, 2000);
+    }
+
+    // 添加提醒日志
+    function addLog(message) {
+        const now = new Date();
+        const timeStr = now.toTimeString().substring(0, 8);
+        const logEntry = `${timeStr} - ${message}`;
+        reminderLog.unshift(logEntry);
+        
+        if (reminderLog.length > 20) {
+            reminderLog.pop();
+        }
+        
+        updateLogDisplay();
+    }
+    
+    // 更新日志显示
+    function updateLogDisplay() {
+        const logContainer = document.getElementById('reminderLog');
+        logContainer.innerHTML = '';
+        
+        reminderLog.forEach(log => {
+            const logItem = document.createElement('div');
+            logItem.className = 'log-item';
+            logItem.textContent = log;
+            logContainer.appendChild(logItem);
+        });
+    }
+
+    /* ---------- 音频解锁功能 ---------- */
+    async function unlockAudio() {
+        try {
+            // 创建并初始化音频上下文
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // 更新按钮状态为"解锁中"
+            const btn = document.getElementById('audioUnlockBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 音频解锁中...';
+            
+            // 播放一个无声片段来解锁音频
+            const buffer = audioContext.createBuffer(1, 1, 22050);
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioContext.destination);
+            source.start(0);
+            
+            // 更新UI状态
+            setTimeout(() => {
+                audioUnlocked = true;
+                btn.innerHTML = '<i class="fas fa-unlock"></i> 音频已解锁';
+                btn.classList.add('unlocked');
+                document.getElementById('audioStatus').textContent = "已激活";
+                document.getElementById('audioStatus').className = "status-value status-active";
+                
+                showNotification("音频功能已解锁，现在可以听到提醒铃声了！");
+                addLog("音频功能已解锁");
+                
+                // 播放测试铃声
+                playAlertSound();
+            }, 1500);
+            
+        } catch (e) {
+            showNotification("音频解锁失败：" + e.message);
+            addLog("音频解锁失败: " + e.message);
+        }
+    }
+
+    /* ---------- 修复定时提醒功能 ---------- */
+    function startReminderScheduler() {
+        // 立即检查一次
+        checkReminders();
+        
+        // 每秒检查一次（更精确的提醒）
+        setInterval(checkReminders, 1000);
+        
+        addLog("定时提醒服务已启动");
+    }
+    
+    // 检查提醒
+    function checkReminders() {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const seconds = now.getSeconds().toString().padStart(2, '0');
+        const currentTime = `${hours}:${minutes}`;
+        
+        // 查找匹配的日程
+        schedules.forEach(schedule => {
+            if (schedule.time === currentTime) {
+                // 防止同一分钟内重复触发
+                if (!lastTriggeredTimes[schedule.time] || 
+                    (now - lastTriggeredTimes[schedule.time]) > 50000) {
+                    
+                    addLog(`触发提醒: ${schedule.desc}`);
+                    showReminder(schedule);
+                    lastTriggeredTimes[schedule.time] = now;
+                }
+            }
+        });
+        
+        // 更新下次提醒显示
+        updateNextReminder();
+    }
+    
+    // 更新下次提醒时间显示
+    function updateNextReminder() {
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        let minDiff = Infinity;
+        let nextTime = "";
+        
+        // 找到下一个最近的提醒
+        schedules.forEach(schedule => {
+            const [hours, minutes] = schedule.time.split(':').map(Number);
+            const scheduleMinutes = hours * 60 + minutes;
+            
+            // 计算时间差（考虑跨天）
+            let diff = scheduleMinutes - currentMinutes;
+            if (diff < 0) {
+                diff += 24 * 60; // 如果已经过了今天的时间，则计算明天的时间
+            }
+            
+            if (diff > 0 && diff < minDiff) {
+                minDiff = diff;
+                nextTime = schedule.time;
+            }
+        });
+        
+        if (minDiff < Infinity) {
+            document.getElementById('nextAlert').textContent = nextTime;
+        }
+    }
+
+    /* ---------- 渲染日程（修改，添加编辑按钮） ---------- */
+    function renderSchedules() {
+        const container = document.getElementById('scheduleContainer');
+        container.innerHTML = '';
+        
+        schedules.forEach((schedule, index) => {
+            const card = document.createElement('div');
+            card.className = 'schedule-card';
+            
+            // 特殊处理血压测量卡片
+            if (schedule.desc.includes("血压")) {
+                const period = schedule.desc.includes("早上") ? "morning" : "night";
+                const todayRecord = getTodaysBPRecord(period);
+                
+                card.innerHTML = `
+                    <div class="schedule-time">${schedule.time}</div>
+                    <div class="schedule-desc">${schedule.desc}</div>
+                    <div class="extra-info">${schedule.extra}</div>
+                    
+                    <div class="bp-form">
+                        <div class="bp-row">
+                            <div class="bp-label">测量1：</div>
+                            <div class="bp-input-group">
+                                <input type="number" class="bp-input" id="bp-sys1-${index}" placeholder="收缩压">
+                                <span>/</span>
+                                <input type="number" class="bp-input" id="bp-dia1-${index}" placeholder="舒张压">
+                            </div>
+                        </div>
+                        
+                        <div class="bp-row">
+                            <div class="bp-label">测量2：</div>
+                            <div class="bp-input-group">
+                                <input type="number" class="bp-input" id="bp-sys2-${index}" placeholder="收缩压">
+                                <span>/</span>
+                                <input type="number" class="bp-input" id="bp-dia2-${index}" placeholder="舒张压">
+                            </div>
+                        </div>
+                        
+                        <div class="bp-row">
+                            <div class="bp-label">测量3：</div>
+                            <div class="bp-input-group">
+                                <input type="number" class="bp-input" id="bp-sys3-${index}" placeholder="收缩压">
+                                <span>/</span>
+                                <input type="number" class="bp-input" id="bp-dia3-${index}" placeholder="舒张压">
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-sm btn-secondary" style="margin-top: 15px; width: 100%;" onclick="saveBloodPressure(${index}, '${period}')">
+                            <i class="fas fa-calculator"></i> 计算并保存平均值
+                        </button>
+                        
+                        ${todayRecord ? `
+                            <div class="bp-result">
+                                今日${schedule.desc.includes("早上") ? "早上" : "晚上"}血压平均值：
+                                <strong>${todayRecord.avgSystolic}/${todayRecord.avgDiastolic} mmHg</strong>
+                                <button class="edit-bp-btn" style="margin-left: 10px;" 
+                                    onclick="openEditBPModal('${todayRecord.date}', '${period}')">
+                                    <i class="fas fa-edit"></i> 编辑
+                                </button>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="bp-history">
+                            <h4 style="margin-bottom: 10px; color: #3498db; text-align: center;">历史记录</h4>
+                            ${renderBPHistory(period)}
+                        </div>
+                    </div>
+                    
+                    <div class="encourage">${getRandomEncouragement()}</div>
+                `;
+            } else {
+                // 普通卡片
+                card.innerHTML = `
+                    <div class="schedule-time">${schedule.time}</div>
+                    <div class="schedule-desc">${schedule.desc}</div>
+                    ${schedule.meds.length ? `
+                        <ul class="meds-list">
+                            ${schedule.meds.map(med => `<li>${med}</li>`).join('')}
+                        </ul>
+                    ` : ''}
+                    <div class="extra-info">${schedule.extra}</div>
+                    <div class="encourage">${getRandomEncouragement()}</div>
+                `;
+            }
+            
+            container.appendChild(card);
+        });
+    }
+
+    /* ---------- 血压记录相关函数（修改，添加编辑功能） ---------- */
+    // 渲染血压历史记录（修改，添加编辑按钮）
+    function renderBPHistory(period) {
+        const records = bloodPressureRecords
+            .filter(record => record.period === period)
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 5); // 只显示最近的5条
+        
+        if (records.length === 0) {
+            return '<p style="text-align: center; opacity: 0.7;">暂无历史记录</p>';
+        }
+        
+        return records.map(record => {
+            const date = new Date(record.date);
+            const dateStr = `${date.getFullYear()}年${date.getMonth()+1}月${date.getDate()}日`;
+            return `
+                <div class="bp-history-item">
+                    ${dateStr} ${period === "morning" ? "早上" : "晚上"}：
+                    ${record.avgSystolic}/${record.avgDiastolic} mmHg
+                    <button class="edit-bp-btn" 
+                        onclick="openEditBPModal('${record.date}', '${period}')">
+                        <i class="fas fa-edit"></i> 编辑
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // 获取今天的血压记录
+    function getTodaysBPRecord(period) {
+        const today = new Date().toISOString().split('T')[0];
+        return bloodPressureRecords.find(
+            record => record.date === today && record.period === period
+        );
+    }
+
+    // 保存血压记录
+    async function saveBloodPressure(index, period) {
+        const sys1 = parseInt(document.getElementById(`bp-sys1-${index}`).value);
+        const dia1 = parseInt(document.getElementById(`bp-dia1-${index}`).value);
+        const sys2 = parseInt(document.getElementById(`bp-sys2-${index}`).value);
+        const dia2 = parseInt(document.getElementById(`bp-dia2-${index}`).value);
+        const sys3 = parseInt(document.getElementById(`bp-sys3-${index}`).value);
+        const dia3 = parseInt(document.getElementById(`bp-dia3-${index}`).value);
+        
+        // 验证输入
+        if (!sys1 || !dia1 || !sys2 || !dia2 || !sys3 || !dia3) {
+            showNotification("请填写完整的血压测量值！");
+            return;
+        }
+        
+        // 计算平均值
+        const avgSystolic = Math.round((sys1 + sys2 + sys3) / 3);
+        const avgDiastolic = Math.round((dia1 + dia2 + dia3) / 3);
+        
+        // 创建记录
+        const record = {
+            date: new Date().toISOString().split('T')[0],
+            period: period,
+            systolic: [sys1, sys2, sys3],
+            diastolic: [dia1, dia2, dia3],
+            avgSystolic: avgSystolic,
+            avgDiastolic: avgDiastolic
+        };
+        
+        // 保存记录
+        await saveBPRecord(record);
+        
+        // 重新渲染日程
+        renderSchedules();
+        showNotification("血压记录已保存并同步到云端！");
+        addLog("血压记录已保存");
+    }
+
+    // 保存到localStorage和云端
+    async function saveBPRecord(record) {
+        // 移除同一天的旧记录
+        bloodPressureRecords = bloodPressureRecords.filter(
+            r => !(r.date === record.date && r.period === record.period)
+        );
+        
+        // 添加新记录
+        bloodPressureRecords.push(record);
+        
+        // 保存到localStorage
+        localStorage.setItem('bloodPressureRecords', JSON.stringify(bloodPressureRecords));
+        
+        // 同步到云端
+        await saveToCloud();
+    }
+
+    // 从localStorage加载血压记录
+    function loadBloodPressureRecords() {
+        const records = localStorage.getItem('bloodPressureRecords');
+        bloodPressureRecords = records ? JSON.parse(records) : [];
+        addLog("血压记录已加载");
+    }
+
+    /* ---------- 血压记录编辑功能（新增） ---------- */
+    // 打开编辑模态框
+    function openEditBPModal(date, period) {
+        // 查找要编辑的记录
+        const recordIndex = bloodPressureRecords.findIndex(
+            r => r.date === date && r.period === period
+        );
+        
+        if (recordIndex === -1) {
+            showNotification("未找到该记录");
+            return;
+        }
+        
+        const record = bloodPressureRecords[recordIndex];
+        
+        // 填充表单数据
+        document.getElementById('editRecordIndex').value = recordIndex;
+        document.getElementById('editRecordPeriod').value = period;
+        document.getElementById('editRecordDate').value = date;
+        document.getElementById('editSystolic').value = record.avgSystolic;
+        document.getElementById('editDiastolic').value = record.avgDiastolic;
+        
+        // 显示日期和时段
+        const dateObj = new Date(date);
+        document.getElementById('editRecordDateDisplay').textContent = 
+            `${dateObj.getFullYear()}年${dateObj.getMonth()+1}月${dateObj.getDate()}日`;
+        document.getElementById('editRecordPeriodDisplay').textContent = 
+            period === "morning" ? "早上" : "晚上";
+        
+        // 显示模态框
+        document.getElementById('editBPModal').style.display = 'flex';
+    }
+
+    // 关闭编辑模态框
+    function closeEditBPModal() {
+        document.getElementById('editBPModal').style.display = 'none';
+    }
+
+    // 保存编辑后的血压记录
+    async function saveEditedBPRecord() {
+        const recordIndex = parseInt(document.getElementById('editRecordIndex').value);
+        const period = document.getElementById('editRecordPeriod').value;
+        const date = document.getElementById('editRecordDate').value;
+        const systolic = parseInt(document.getElementById('editSystolic').value);
+        const diastolic = parseInt(document.getElementById('editDiastolic').value);
+        
+        // 验证输入
+        if (!systolic || !diastolic || systolic <= 0 || diastolic <= 0) {
+            showNotification("请输入有效的血压值");
+            return;
+        }
+        
+        // 更新记录
+        if (recordIndex >= 0 && recordIndex < bloodPressureRecords.length) {
+            // 更新平均值
+            bloodPressureRecords[recordIndex].avgSystolic = systolic;
+            bloodPressureRecords[recordIndex].avgDiastolic = diastolic;
+            
+            // 如果有原始测量值，更新它们的平均值（简单处理）
+            if (bloodPressureRecords[recordIndex].systolic && bloodPressureRecords[recordIndex].systolic.length === 3) {
+                const totalSystolic = systolic * 3;
+                const totalDiastolic = diastolic * 3;
+                bloodPressureRecords[recordIndex].systolic = [
+                    Math.round(totalSystolic / 3),
+                    Math.round(totalSystolic / 3),
+                    Math.round(totalSystolic / 3)
+                ];
+                bloodPressureRecords[recordIndex].diastolic = [
+                    Math.round(totalDiastolic / 3),
+                    Math.round(totalDiastolic / 3),
+                    Math.round(totalDiastolic / 3)
+                ];
+            }
+            
+            // 保存到本地存储
+            localStorage.setItem('bloodPressureRecords', JSON.stringify(bloodPressureRecords));
+            
+            // 同步到云端
+            await saveToCloud();
+            
+            // 重新渲染
+            renderSchedules();
+            renderBPRecords(); // 更新血压记录模态框
+            
+            showNotification("血压记录已更新");
+            addLog("血压记录已修改");
+            closeEditBPModal();
+        }
+    }
+
+    function getRandomEncouragement() {
+        return encouragement[Math.floor(Math.random() * encouragement.length)];
+    }
+
+    /* ---------- 日期和时间函数 ---------- */
+    function updateCurrentDate() {
+        const now = new Date();
+        const options = { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric', 
+            weekday: 'long',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+        const dateStr = now.toLocaleDateString('zh-CN', options);
+        document.getElementById('currentDate').textContent = `今天是：${dateStr}`;
+    }
+
+    /* ---------- 通知和提醒函数 ---------- */
+    function showNotification(message) {
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notificationText');
+        
+        notificationText.textContent = message;
+        notification.style.display = 'block';
+        
+        // 5秒后自动隐藏
+        setTimeout(() => {
+            notification.style.display = 'none';
+        }, 5000);
+    }
+
+    // 修复语音功能
+function playAlertSound() {
+    if (!audioUnlocked) {
+        showNotification("请先解锁音频功能");
+        return;
+    }
+
+    const playTimes = 5;
+    let count = 0;
+
+    function playOnce() {
+        try {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            const oscillator = audioContext.createOscillator();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+
+            const gainNode = audioContext.createGain();
+            gainNode.gain.setValueAtTime(currentVolume, audioContext.currentTime);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.start();
+            setTimeout(() => oscillator.stop(), 500);
+
+            oscillator.onended = () => {
+                count++;
+                if (count < playTimes) {
+                    setTimeout(playOnce, 500); // 每两次间隔500ms
+                }
+            };
+        } catch (e) {
+            console.error("播放铃声失败:", e);
+            showNotification("播放铃声失败：" + e.message);
+            addLog("播放铃声失败: " + e.message);
+        }
+    }
+
+    playOnce();
+}
+    /* ---------- 模态框函数（修改血压记录模态框渲染） ---------- */
+    function openDateEditModal() {
+        document.getElementById('dateEditModal').style.display = 'flex';
+    }
+
+    function closeDateEditModal() {
+        document.getElementById('dateEditModal').style.display = 'none';
+    }
+
+    async function saveReviewDate() {
+        const dateValue = document.getElementById('reviewDateInput').value;
+        const timeValue = document.getElementById('reviewTimeInput').value;
+        
+        if (dateValue) {
+            reviewDate = new Date(dateValue).toISOString();
+            reviewTime = timeValue;
+            
+            // 更新显示
+            const dateObj = new Date(reviewDate);
+            const formattedDate = `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月${dateObj.getDate()}日 ${reviewTime}`;
+            document.getElementById('reviewDateDisplay').textContent = formattedDate;
+            
+            // 同步到云端
+            await saveToCloud();
+            
+            showNotification("复查日期和时间已更新并同步到云端！");
+            addLog("复查日期已更新");
+            closeDateEditModal();
+        } else {
+            showNotification("请选择复查日期");
+        }
+    }
+
+    function openEditModal() {
+        document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+    }
+    
+    function openAddReminderModal() {
+        document.getElementById('addReminderModal').style.display = 'flex';
+    }
+    
+    function closeAddReminderModal() {
+        document.getElementById('addReminderModal').style.display = 'none';
+    }
+    
+    function viewBloodPressureRecords() {
+        document.getElementById('bpRecordsModal').style.display = 'flex';
+        renderBPRecords();
+    }
+    
+    function closeBPRecordsModal() {
+        document.getElementById('bpRecordsModal').style.display = 'none';
+    }
+    
+    // 修改血压记录表格渲染，添加编辑按钮
+    function renderBPRecords() {
+        const container = document.getElementById('bpRecordsContent');
+        
+        // 获取近三个月的记录
+        const today = new Date();
+        const threeMonthsAgo = new Date(today);
+        threeMonthsAgo.setMonth(today.getMonth() - 3);
+        
+        const recentRecords = bloodPressureRecords.filter(record => {
+            const recordDate = new Date(record.date);
+            return recordDate >= threeMonthsAgo;
+        });
+        
+        // 按日期分组
+        const recordsByDate = {};
+        recentRecords.forEach(record => {
+            if (!recordsByDate[record.date]) {
+                recordsByDate[record.date] = { morning: null, night: null };
+            }
+            recordsByDate[record.date][record.period] = record;
+        });
+        
+        // 生成表格
+        let html = `
+            <table class="bp-table">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>早上血压</th>
+                        <th>晚上血压</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        // 按日期排序
+        const sortedDates = Object.keys(recordsByDate).sort((a, b) => new Date(b) - new Date(a));
+        
+        // 生成记录行
+        sortedDates.forEach(date => {
+            const dateObj = new Date(date);
+            const displayDate = `${dateObj.getMonth()+1}月${dateObj.getDate()}日`;
+            
+            const morningRecord = recordsByDate[date].morning;
+            const nightRecord = recordsByDate[date].night;
+            
+            html += `
+                <tr>
+                    <td>${displayDate}</td>
+                    <td>${morningRecord ? `${morningRecord.avgSystolic}/${morningRecord.avgDiastolic}` : '-'}</td>
+                    <td>${nightRecord ? `${nightRecord.avgSystolic}/${nightRecord.avgDiastolic}` : '-'}</td>
+                    <td>
+                        ${morningRecord ? `
+                            <button class="edit-bp-btn" 
+                                onclick="openEditBPModal('${date}', 'morning')">
+                                <i class="fas fa-edit"></i> 编辑早上
+                            </button>
+                        ` : ''}
+                        ${nightRecord ? `
+                            <button class="edit-bp-btn" 
+                                onclick="openEditBPModal('${date}', 'night')">
+                                <i class="fas fa-edit"></i> 编辑晚上
+                            </button>
+                        ` : ''}
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                </tbody>
+            </table>
+        `;
+        
+        container.innerHTML = html;
+    }
+    
+    async function saveNewReminder() {
+        const time = document.getElementById('newReminderTime').value;
+        const desc = document.getElementById('newReminderDesc').value;
+        const medsText = document.getElementById('newReminderMeds').value;
+        const extra = document.getElementById('newReminderExtra').value;
+        
+        if (!time || !desc) {
+            showNotification("请填写时间和提醒内容");
+            return;
+        }
+        
+        const meds = medsText.split('\n').filter(line => line.trim() !== '');
+        
+        schedules.push({
+            time,
+            desc,
+            meds,
+            extra
+        });
+        
+        // 同步到云端
+        await saveToCloud();
+        
+        renderSchedules();
+        showNotification("新提醒已添加成功并同步到云端！");
+        addLog("添加新提醒: " + desc);
+        closeAddReminderModal();
+    }
+    
+    function confirmAddReminder() {
+        saveNewReminder();
+    }
+
+    function restoreDefaultSchedules() {
+        if (confirm("确定要恢复默认日程设置吗？当前修改将丢失。")) {
+            schedules = JSON.parse(JSON.stringify(DEFAULT_SCHEDULES));
+            renderSchedules();
+            saveToCloud();
+            showNotification("已成功恢复默认日程设置！");
+            addLog("已恢复默认日程");
+        }
+    }
+
+    async function saveScheduleTimes() {
+        // 在实际应用中，这里会保存所有修改
+        renderSchedules();
+        await saveToCloud();
+        showNotification("日程已更新，新的提醒时间已生效并同步到云端！");
+        addLog("日程更新已保存");
+        closeEditModal();
+    }
+
+    /* ---------- 提醒功能 ---------- */
+    function showReminder(item) {
+        // 更新提醒内容
+        document.getElementById('reminderTime').textContent = item.time;
+        document.getElementById('reminderText').textContent = item.desc;
+        
+        // 更新药物列表
+        const medsList = document.getElementById('medsModalList');
+        medsList.innerHTML = '';
+        
+        if (item.meds.length > 0) {
+            item.meds.forEach(med => {
+                const li = document.createElement('li');
+                li.textContent = med;
+                medsList.appendChild(li);
+            });
+        } else {
+            medsList.innerHTML = '<li>无特定药物</li>';
+        }
+        
+        // 显示模态框
+        document.getElementById('reminderModal').style.display = 'flex';
+        
+        // 播放铃声（如果已解锁）
+        if (audioUnlocked) {
+            playAlertSound();
+        }
+        
+        // 播放语音提醒
+        if ('speechSynthesis' in window) {
+            const speech = new SpeechSynthesisUtterance();
+            speech.text = `现在是${item.time}，${item.desc}`;
+            speech.lang = 'zh-CN';
+            speech.volume = currentVolume;
+            
+            const voices = speechSynthesis.getVoices().filter(v => v.lang.includes('zh'));
+            if (voices.length > 0) {
+                const femaleVoice = voices.find(v => v.name.includes('Sin') || v.name.includes('Female'));
+                if (femaleVoice) speech.voice = femaleVoice;
+            }
+            
+            speechSynthesis.speak(speech);
+        }
+        
+        // 启动倒计时
+        startCountdown();
+    }
+
+    function startCountdown() {
+        let timeLeft = 60;
+        const countdownElement = document.getElementById('countdown');
+        const progressBar = document.getElementById('timerProgress');
+        
+        progressBar.style.transition = 'none';
+        progressBar.style.width = '100%';
+        
+        setTimeout(() => {
+            progressBar.style.transition = 'width 60s linear';
+            progressBar.style.width = '0%';
+        }, 10);
+        
+        const countdownInterval = setInterval(() => {
+            timeLeft--;
+            countdownElement.textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                closeReminder();
+                showNotification("提醒已自动关闭，将在5分钟后再次提醒");
+                addLog("提醒自动关闭");
+            }
+        }, 1000);
+    }
+
+    function closeReminder() {
+        document.getElementById('reminderModal').style.display = 'none';
+        // 停止语音
+        if ('speechSynthesis' in window) {
+            speechSynthesis.cancel();
+        }
+    }
+
+    function snoozeReminder() {
+        closeReminder();
+        showNotification("将在5分钟后再次提醒");
+        addLog("提醒已推迟");
+    }
+
+    function skipReminderToday() {
+        closeReminder();
+        showNotification("今日不再显示此提醒");
+        addLog("今日跳过提醒");
+    }
+
+    /* ---------- 事件监听 ---------- */
+    function setupEventListeners() {
+        // 音量控制
+        const volumeSlider = document.getElementById('volume');
+        const volumeValue = document.getElementById('volumeValue');
+        
+        volumeSlider.addEventListener('input', function() {
+            const volumePercent = Math.round(this.value * 100);
+            volumeValue.textContent = `${volumePercent}%`;
+        });
+        
+        // 修复：只允许在非输入区域点击时弹出提醒
+        document.querySelectorAll('.schedule-card').forEach((card, index) => {
+            card.addEventListener('click', (e) => {
+                // 检查点击目标是否是输入框或按钮
+                if (e.target.classList.contains('bp-input') || 
+                    e.target.classList.contains('btn') ||
+                    e.target.classList.contains('edit-bp-btn')) {
+                    return; // 如果是输入元素或编辑按钮，不触发提醒
+                }
+                showReminder(schedules[index]);
+                addLog("手动触发提醒: " + schedules[index].desc);
+            });
+        });
+        
+        // 关闭提醒按钮
+        document.getElementById('reminderModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('reminderModal')) {
+                closeReminder();
+            }
+        });
+    }
+
+    // 保存设置
+    async function saveSettings() {
+        await saveToCloud();
+        showNotification("设置已保存并同步到云端！");
+        addLog("设置已保存");
+    }
+
+    // 初始化应用
+    window.onload = initApp;
+</script>
+</body>
+</html>
